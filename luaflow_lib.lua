@@ -181,7 +181,7 @@ local function get_flow(ctx, t, func, indent)
     end
 end
 
-local function get_root_flow(ctx)
+function _M.get_root_flow(ctx)
     local t = {}
 
     for k, _ in pairs(ctx.roots) do

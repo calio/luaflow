@@ -7,6 +7,7 @@ local sub = string.sub
 local encode = cjson.encode
 local parse_file = lib.parse_file
 local adjust_ctx = lib.adjust_ctx
+local create_ctx = lib.create_ctx
 local print_root_flow = lib.print_root_flow
 local opt = {}
 
@@ -17,6 +18,7 @@ local function usage()
 
 OPTIONS:
     -a, --ast       dump AST
+    -h, --help      show this help message
 ]=])
 end
 
@@ -41,7 +43,8 @@ local function main()
         end
     end
 
-    local t, ctx = parse_file(arg[opt_idx])
+    local ctx = create_ctx()
+    local t = parse_file(ctx, arg[opt_idx])
 
     if opt.ast then
         print(encode(t))

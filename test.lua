@@ -5,19 +5,38 @@ describe("Luaflow tests", function()
     local function test_file_path(s)
         return "tests/" .. s
     end
-    local function verify_flow(lua, flow_file)
+
+    local function verify_flow(lua_src, flow_txt)
+        local ctx = lib.create_ctx()
+        local t = lib.parse(ctx, lua_src)
+        lib.adjust_ctx(ctx)
+        local flow = lib.get_root_flow(ctx)
+        assert.are.equal(flow_txt, concat(flow))
+    end
+
+    local function verify_flow_file(lua_file, flow_file)
         local f = assert(io.open(test_file_path(flow_file)))
         local txt = f:read("*a")
         f:close()
 
-        local t, ctx = lib.parse_file(test_file_path(lua))
+        local ctx = lib.create_ctx()
+        local t = lib.parse_file(ctx, test_file_path(lua_file))
         lib.adjust_ctx(ctx)
         local flow = lib.get_root_flow(ctx)
-        assert.are.equal(concat(flow), txt)
+        assert.are.equal(txt, concat(flow))
     end
 
     it("sanity", function()
-        verify_flow("sanity.lua", "sanity.txt")
+        verify_flow_file("sanity.lua", "sanity.txt")
+        verify_flow([[
+        function
+            foo()
+        end
+        function main()
+            foo()
+        end
+        ]],
+        "main\n    foo\n")
     end)
 
 end)

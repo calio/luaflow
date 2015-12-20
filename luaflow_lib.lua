@@ -11,7 +11,7 @@ local encode = cjson.encode
 local GLOBAL = '_G'
 
 
-local function create_ctx()
+function _M.create_ctx()
     return {
         roots = {},
         no_roots = {},
@@ -131,7 +131,7 @@ local function visit(t, conf, ctx)
     end
 end
 
-local function parse(s, ctx)
+function _M.parse(ctx, s)
     local t, err = parser.parse(s, "luaflow")
 
     if not t and err then
@@ -150,7 +150,7 @@ local function parse(s, ctx)
 
     visit(t, conf, ctx)
 
-    return t, ctx
+    return t
 end
 
 function _M.adjust_ctx(ctx)
@@ -192,17 +192,16 @@ function _M.get_root_flow(ctx)
 end
 
 function _M.print_root_flow(ctx)
-    local t = get_root_flow(ctx)
+    local t = _M.get_root_flow(ctx)
     print(concat(t))
 end
 
-function _M.parse_file(fname)
+function _M.parse_file(ctx, fname)
     local file = assert(io.open(fname))
     local s = file:read("*a")
     file:close()
 
-    local ctx = create_ctx()
-    return parse(s, ctx)
+    return _M.parse(ctx, s)
 end
 
 return _M

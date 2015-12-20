@@ -1,2 +1,10 @@
-bar
-    foo
+f1
+f2
+main
+    func_a
+        func_b
+            func_c
+        func_c
+_M.bar
+    foo.bar.log
+__index

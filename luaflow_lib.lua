@@ -160,7 +160,22 @@ function _M.adjust_ctx(ctx)
     end
 end
 
-local function get_flow(ctx, t, func, indent)
+local function is_exclude(conf, func)
+    if conf and conf.exclude and conf.exclude[func] then
+        return true
+    end
+
+    return false
+end
+
+local function get_flow(ctx, t, func, indent, conf)
+    if is_exclude(conf, func) then
+        return false
+    end
+
+    if #t ~= 0 then
+        insert(t, "\n")
+    end
     for _ = 1, indent do
         insert(t, " ")
     end
@@ -172,7 +187,7 @@ local function get_flow(ctx, t, func, indent)
     local seen = ctx.seen
     if seen[func] and seen[func] > 0 then
         insert(t, " (recursive: see " .. seen[func] .. ")")
-        return
+        return true
     else
         seen[func] = 1
     end
@@ -180,17 +195,20 @@ local function get_flow(ctx, t, func, indent)
     local callee = ctx.call[func]
 
     if not callee then
-        return
+        return true
     end
 
     for i, v in ipairs(callee) do
-        insert(t, "\n")
-        get_flow(ctx, t, v, indent + 4)
-        seen[v] = seen[v] - 1
+        get_flow(ctx, t, v, indent + 4, conf)
+        if seen[v] then
+            seen[v] = seen[v] - 1
+        end
     end
+
+    return true
 end
 
-function _M.get_root_flow(ctx)
+function _M.get_root_flow(ctx, conf)
     local t = {}
 
     local i = 0
@@ -203,26 +221,16 @@ function _M.get_root_flow(ctx)
         ctx.roots[func] = true
     end
 
-    i = 1
-    for k, _ in pairs(ctx.roots) do
-        if i ~= 1 then
-            insert(t, "\n")
-        end
-        get_flow(ctx, t, k, 0)
+    for func, _ in pairs(ctx.roots) do
+        get_flow(ctx, t, func, 0, conf)
         ctx.seen = {}
-        i = i + 1
-    end
-
-    if i == 1 then
-        
-        get_flow(ctx, t, k, 0)
     end
 
     return t
 end
 
-function _M.print_root_flow(ctx)
-    local t = _M.get_root_flow(ctx)
+function _M.print_root_flow(ctx, conf)
+    local t = _M.get_root_flow(ctx, conf)
     print(concat(t))
 end
 

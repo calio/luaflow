@@ -214,6 +214,11 @@ end
 function _M.get_root_flow(ctx, conf)
     local t = {}
 
+    if conf.main then
+        get_flow(ctx, t, conf.main, 0, conf)
+        return t
+    end
+
     local i = 0
     for _, _ in pairs(ctx.roots) do
         i = i + 1
@@ -244,21 +249,51 @@ local function dot_escape_name(s)
     return s
 end
 
+local function get_dot_flow(ctx, t, caller, conf)
+    if not is_exclude(conf, caller) then
+        local v = ctx.call[caller]
+        for _, callee in ipairs(v) do
+            if not is_exclude(conf, callee) then
+                insert(t, format("%s -> %s;\n", dot_escape_name(caller),
+                       dot_escape_name(callee)))
+            end
+        end
+    end
+end
+
+local function get_roots(ctx, func, t)
+    local call = ctx.call
+
+    if not call[func] then
+        return
+    end
+
+    for _, callee in ipairs(call[func]) do
+        if not t[callee] then
+            get_roots(ctx, callee, t)
+        end
+    end
+    t[func] = true
+end
+
 function _M.print_root_dot_flow(ctx, conf)
     local t = {}
     insert(t, "digraph structs {\n")
     local call = ctx.call
 
-    for caller, v in pairs(call) do
-        if not is_exclude(conf, caller) then
-            for _, callee in ipairs(v) do
-                if not is_exclude(conf, callee) then
-                    insert(t, format("%s -> %s;\n", dot_escape_name(caller),
-                           dot_escape_name(callee)))
-                end
-            end
-        end
+    local roots
+    if conf.main then
+        local t = { [conf.main] = true }
+        get_roots(ctx, conf.main, t)
+        roots = t
+    else
+        roots = ctx.call
     end
+
+    for caller, _ in pairs(roots) do
+        get_dot_flow(ctx, t, caller, conf)
+    end
+
     insert(t, "}\n")
     print(concat(t))
 end

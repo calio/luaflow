@@ -11,6 +11,7 @@ describe("Luaflow tests", function()
         local t = lib.parse(ctx, lua_src)
         lib.adjust_ctx(ctx)
         local flow = lib.get_root_flow(ctx)
+        flow[#flow + 1] = "\n"
         assert.are.equal(flow_txt, concat(flow))
     end
 
@@ -23,6 +24,7 @@ describe("Luaflow tests", function()
         local t = lib.parse_file(ctx, test_file_path(lua_file))
         lib.adjust_ctx(ctx)
         local flow = lib.get_root_flow(ctx)
+        flow[#flow + 1] = "\n"
         assert.are.equal(txt, concat(flow))
     end
 
@@ -37,6 +39,14 @@ describe("Luaflow tests", function()
         end
         ]],
         "main\n    foo\n")
+
+        verify_flow([[
+function foo()
+    foo()
+end
+        ]],
+        "foo\n    foo (recursive: see 1)\n")
+
     end)
 
 end)

@@ -17,6 +17,7 @@ function _M.create_ctx()
         no_roots = {},
         call = {},
         scope = { GLOBAL },
+        seen = {}
     }
 end
 
@@ -164,11 +165,17 @@ local function get_flow(ctx, t, func, indent)
         insert(t, " ")
     end
 
-    assert(type(func) == "string", "name is not string" .. encode(func))
+    assert(type(func) == "string", "name is not string: " .. encode(func))
 
     insert(t, func)
-    insert(t, "\n")
-    --print(concat(t))
+
+    local seen = ctx.seen
+    if seen[func] and seen[func] > 0 then
+        insert(t, " (recursive: see " .. seen[func] .. ")")
+        return
+    else
+        seen[func] = 1
+    end
 
     local callee = ctx.call[func]
 
@@ -176,15 +183,38 @@ local function get_flow(ctx, t, func, indent)
         return
     end
 
-    for _, v in ipairs(callee) do
+    for i, v in ipairs(callee) do
+        insert(t, "\n")
         get_flow(ctx, t, v, indent + 4)
+        seen[v] = seen[v] - 1
     end
 end
 
 function _M.get_root_flow(ctx)
     local t = {}
 
+    local i = 0
+    for _, _ in pairs(ctx.roots) do
+        i = i + 1
+    end
+
+    if i == 0 then
+        local func = ctx.no_roots[1]
+        ctx.roots[func] = true
+    end
+
+    i = 1
     for k, _ in pairs(ctx.roots) do
+        if i ~= 1 then
+            insert(t, "\n")
+        end
+        get_flow(ctx, t, k, 0)
+        ctx.seen = {}
+        i = i + 1
+    end
+
+    if i == 1 then
+        
         get_flow(ctx, t, k, 0)
     end
 

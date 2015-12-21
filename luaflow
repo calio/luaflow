@@ -4,6 +4,9 @@ local lib = require "luaflow_lib"
 local cjson = require "cjson"
 
 local sub = string.sub
+local insert = table.insert
+local concat = table.concat
+local find   = string.find
 local encode = cjson.encode
 local parse_file = lib.parse_file
 local adjust_ctx = lib.adjust_ctx
@@ -11,17 +14,6 @@ local create_ctx = lib.create_ctx
 local print_root_flow = lib.print_root_flow
 local opt = {}
 
-
-local function usage()
-    print([=[Usage:
-    luaflow [OPTIONS] luafile
-
-OPTIONS:
-    -a, --ast       dump AST
-    -e, --exclude   exclude this list of comma separated functions
-    -h, --help      show this help message
-]=])
-end
 
 local function parse_exclude_list(s)
     local l = {}
@@ -33,35 +25,106 @@ local function parse_exclude_list(s)
     return l
 end
 
+-- {
+--  -- short arg, long arg, description, format
+--  -- format:
+--  --      ':' -> takes an argument
+--  {'f', 'foo', 'this is a option that takes one argument', ':'},
+-- }
+-- generate getopt and usage function
+local function create_getopt(spec, arg, header)
+    local usage = {}
+    local opt_lookup = {}
+
+    if header then
+        insert(usage, header)
+    else
+        insert(usage, arg[0])
+        insert(usage, " [OPTIONS]\n")
+    end
+    insert(usage, "\nOPTIONS:\n")
+    for i, v in ipairs(spec) do
+        insert(usage, "  ")
+        local short = '-' .. v[1]
+        local long = '--' .. v[2]
+        insert(usage, short .. ", " .. long
+               .. "\t\t" .. v[3] .. "\n")
+        local take_arg = false
+        if v[4] and find(v[4], ":") then
+            take_arg = true
+        end
+        opt_lookup[short] = { name = v[2], take_arg = take_arg }
+        opt_lookup[long] = { name = v[2], take_arg = take_arg }
+    end
+
+    local usage_str = concat(usage)
+
+    local usage_function = function () print(usage_str) end
+    local getopt_function = function (arg)
+        local opt = {}
+        local i = 1
+        while i <= #arg do
+            local v = arg[i]
+            if v == '--' then
+                i = i + 1
+                break
+            end
+
+            if sub(v, 1, 1) ~= "-" then
+                break
+            end
+
+            local spec = opt_lookup[v]
+            if not spec then
+                return error('Unknow argument "' .. v .. '"\n')
+            end
+
+            local name = spec.name
+
+            if spec.take_arg then
+                if not arg[i + 1] then
+                    return error(v .. ' takes argument')
+                end
+
+                opt[name] = arg[i + 1]
+                i = i + 1
+            else
+                opt[name] = true
+            end
+
+            i = i + 1
+        end
+
+        return opt, i
+    end
+
+    return getopt_function, usage_function
+end
+
 local function main()
+
+    local getopt, usage = create_getopt({
+        {'a', 'ast', 'dump AST'},
+        {'e', 'exclude', 'exclude this list of comma separated functions', ':'},
+        {'h', 'help', 'show this help message'},
+    }, arg, "luaflow [OPTIONS] luafile\n")
+
     if #arg < 1 then
         usage()
         os.exit(0)
     end
 
-    local opt_idx = 1
-    local i = 1
-    while i <= #arg do
-        local v = arg[i]
-        if sub(v, 1, 1) ~= '-' then
-            opt_idx = i
-            break
-        end
+    local opt, opt_idx = getopt(arg)
 
-        if v == '-a' or v == '--ast' then
-            opt.ast = true
-        elseif v == '-h' or v == '--help' then
-            usage()
-            os.exit(0)
-        elseif v == '-e' or v == '--exclude' then
-            if not arg[i + 1] then
-                error('expeced exclude list after "' .. arg[i] .. '"')
-            end
-            opt.exclude = parse_exclude_list(arg[i + 1])
-            i = i + 1
-        end
-
-        i = i + 1
+    if opt.help then
+        usage()
+        os.exit(0)
+    elseif not arg[opt_idx] then
+        print("Missing luafile")
+        usage()
+        os.exit()
+    elseif opt.exclude then
+        opt.exclude = parse_exclude_list(opt.exclude)
     end
 
     local ctx = create_ctx()

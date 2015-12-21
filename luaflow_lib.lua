@@ -7,6 +7,9 @@ local parser = require "lua-parser.parser"
 
 local insert = table.insert
 local concat = table.concat
+local format = string.format
+local gsub   = string.gsub
+local find   = string.find
 local encode = cjson.encode
 local GLOBAL = '_G'
 
@@ -231,6 +234,32 @@ end
 
 function _M.print_root_flow(ctx, conf)
     local t = _M.get_root_flow(ctx, conf)
+    print(concat(t))
+end
+
+local function dot_escape_name(s)
+    if find(s, ".", 1, true) then
+        return '"' .. s .. '"'
+    end
+    return s
+end
+
+function _M.print_root_dot_flow(ctx, conf)
+    local t = {}
+    insert(t, "digraph structs {\n")
+    local call = ctx.call
+
+    for caller, v in pairs(call) do
+        if not is_exclude(conf, caller) then
+            for _, callee in ipairs(v) do
+                if not is_exclude(conf, callee) then
+                    insert(t, format("%s -> %s;\n", dot_escape_name(caller),
+                           dot_escape_name(callee)))
+                end
+            end
+        end
+    end
+    insert(t, "}\n")
     print(concat(t))
 end
 

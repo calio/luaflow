@@ -12,6 +12,7 @@ local parse_file = lib.parse_file
 local adjust_ctx = lib.adjust_ctx
 local create_ctx = lib.create_ctx
 local print_root_flow = lib.print_root_flow
+local print_root_dot_flow = lib.print_root_dot_flow
 local opt = {}
 
 
@@ -105,6 +106,7 @@ local function main()
 
     local getopt, usage = create_getopt({
         {'a', 'ast', 'dump AST'},
+        {'d', 'dot', 'generate call graph dot file (GraphViz format)'},
         {'e', 'exclude', 'exclude this list of comma separated functions', ':'},
         {'h', 'help', 'show this help message'},
     }, arg, "luaflow [OPTIONS] luafile\n")
@@ -136,7 +138,13 @@ local function main()
     end
 
     adjust_ctx(ctx)
-    print_root_flow(ctx, { exclude = opt.exclude })
+
+    local conf = { exclude = opt.exclude }
+    if opt.dot then
+        print_root_dot_flow(ctx, conf)
+    else
+        print_root_flow(ctx, conf)
+    end
     --print(encode(t))
     --print(encode(ctx.call))
     --print(encode(ctx.roots))

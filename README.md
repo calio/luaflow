@@ -20,7 +20,7 @@ How to use
 
 **Get a call tree**
 
-    $ luaflow luaflow_lib
+    $ luaflow luaflow_lib.lua
 
 **Get a call graph (requires GraphViz)**
 

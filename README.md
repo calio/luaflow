@@ -18,19 +18,23 @@ How to use
       -h, --help            show this help message
 
 
-Get call tree
+**Get a call tree**
 
-    $ luaflow a.lua
+    $ luaflow luaflow_lib
 
-Get call graph (requires GraphViz)
+**Get a call graph (requires GraphViz)**
 
-    $ luaflow -d a.lua > a.dot
+    $ luaflow -d luaflow_lib.lua > a.dot
     $ dot -Tpng -o a.png a.dot
 
-Get call tree starting from a function (given function name)
+**Generated call graph**
+
+![call graph](https://raw.githubusercontent.com/calio/luaflow/master/doc/call_graph.png)
+
+**Get call tree starting from a function (given function name)**
 
     $ luaflow -m process_set_enter luaflow_lib.lua
 
-Exclude function from call tree
+**Exclude function from call tree**
 
     $ luaflow -e insert luaflow_lib.lua

@@ -278,7 +278,7 @@ end
 
 function _M.print_root_dot_flow(ctx, conf)
     local t = {}
-    insert(t, "digraph structs {\n")
+    insert(t, "digraph structs {\nrankdir=LR;\n")
     local call = ctx.call
 
     local roots

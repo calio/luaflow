@@ -14,6 +14,8 @@ local encode = cjson.encode
 local GLOBAL = '_G'
 
 
+local link_added = {}
+
 function _M.create_ctx()
     return {
         roots = {},
@@ -254,8 +256,12 @@ local function get_dot_flow(ctx, t, caller, conf)
         local v = ctx.call[caller]
         for _, callee in ipairs(v) do
             if not is_exclude(conf, callee) then
-                insert(t, format("%s -> %s;\n", dot_escape_name(caller),
-                       dot_escape_name(callee)))
+                local link = format("%s -> %s;\n", dot_escape_name(caller),
+                       dot_escape_name(callee))
+                if not link_added[link] then
+                    insert(t, link)
+                    link_added[link] = true
+                end
             end
         end
     end

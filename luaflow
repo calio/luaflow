@@ -13,6 +13,7 @@ local adjust_ctx = lib.adjust_ctx
 local create_ctx = lib.create_ctx
 local print_root_flow = lib.print_root_flow
 local print_root_dot_flow = lib.print_root_dot_flow
+local get_root_dot_flow = lib.get_root_dot_flow
 local opt = {}
 
 
@@ -102,12 +103,44 @@ local function create_getopt(spec, arg, header)
     return getopt_function, usage_function
 end
 
+local function basename(fname)
+    local s = string.reverse(fname)
+    local i = string.find(s, ".", 1, true)
+    if not i then
+        return fname
+    end
+
+    local j = string.find(s, "/", i, true)
+    if j then
+        return string.reverse(string.sub(s, i + 1, j - 1))
+    else
+        return string.reverse(string.sub(s, i + 1))
+    end
+end
+
+local function gen_graph(ctx, fname, conf)
+    local name = basename(fname)
+    local s = get_root_dot_flow(ctx, conf)
+    local dot_file = "/tmp/" .. name .. ".dot"
+
+    local f = assert(io.open(dot_file, "w"))
+    f:write(s)
+    f:close()
+    --print("Wrote " .. dot_file)
+
+    local output_file = name .. ".png"
+    os.execute("dot -Tpng -o " .. output_file .. " " .. dot_file)
+    os.remove(dot_file)
+    print("Wrote " .. output_file)
+end
+
 local function main()
 
     local getopt, usage = create_getopt({
         {'a', 'ast', 'dump AST'},
         {'d', 'dot', 'generate call graph dot file (GraphViz format)'},
         {'e', 'exclude', 'exclude this list of comma separated functions', ':'},
+        {'g', 'graph', 'generate call graph file (png format)'},
         {'m', 'main', 'main/entry function', ':'},
         {'h', 'help', 'show this help message'},
     }, arg, "luaflow [OPTIONS] luafile\n")
@@ -131,7 +164,8 @@ local function main()
     end
 
     local ctx = create_ctx()
-    local t = parse_file(ctx, arg[opt_idx])
+    local fname = arg[opt_idx]
+    local t = parse_file(ctx, fname)
 
     if opt.ast then
         print(encode(t))
@@ -146,6 +180,8 @@ local function main()
     }
     if opt.dot then
         print_root_dot_flow(ctx, conf)
+    elseif opt.graph then
+        gen_graph(ctx, fname, conf)
     else
         print_root_flow(ctx, conf)
     end

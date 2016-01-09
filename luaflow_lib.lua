@@ -282,7 +282,7 @@ local function get_roots(ctx, func, t)
     t[func] = true
 end
 
-function _M.print_root_dot_flow(ctx, conf)
+function _M.get_root_dot_flow(ctx, conf)
     local t = {}
     insert(t, "digraph structs {\nrankdir=LR;\n")
     local call = ctx.call
@@ -301,7 +301,8 @@ function _M.print_root_dot_flow(ctx, conf)
     end
 
     insert(t, "}\n")
-    print(concat(t))
+
+    return concat(t)
 end
 
 function _M.parse_file(ctx, fname)

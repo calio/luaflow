@@ -8,13 +8,15 @@ local parser = require "lua-parser.parser"
 local insert = table.insert
 local concat = table.concat
 local format = string.format
-local gsub   = string.gsub
 local find   = string.find
 local encode = cjson.encode
 local GLOBAL = '_G'
 
 
+local node_color = {}
 local link_added = {}
+local colors = {"#0288d1", "#03a9f4", "#ffc107", "#ffa000"}
+
 
 function _M.create_ctx()
     return {
@@ -203,7 +205,7 @@ local function get_flow(ctx, t, func, indent, conf)
         return true
     end
 
-    for i, v in ipairs(callee) do
+    for _, v in ipairs(callee) do
         get_flow(ctx, t, v, indent + 4, conf)
         if seen[v] then
             seen[v] = seen[v] - 1
@@ -251,16 +253,43 @@ local function dot_escape_name(s)
     return s
 end
 
+local color_index = 0
+local function get_color()
+    local r =  colors[color_index % #colors + 1]
+    color_index = color_index + 1
+    return r
+end
+
+local function get_node_color(name)
+    if node_color[name] then
+        return node_color[name]
+    end
+
+    local c = get_color()
+    node_color[name] = c
+    return c
+end
+
 local function get_dot_flow(ctx, t, caller, conf)
     if not is_exclude(conf, caller) then
         local v = ctx.call[caller]
         for _, callee in ipairs(v) do
             if not is_exclude(conf, callee) then
-                local link = format("%s -> %s;\n", dot_escape_name(caller),
-                       dot_escape_name(callee))
-                if not link_added[link] then
+                local key = format("%s -> %s", dot_escape_name(caller),
+                           dot_escape_name(callee))
+                if not link_added[key] then
+                    local c1 = get_node_color(caller)
+                    local c2 = get_node_color(callee)
+
+                    local link = format('%s [color="%s"];\n', key, c1)
                     insert(t, link)
-                    link_added[link] = true
+                    --insert(t, format('edge [color="%s"];\n', c1))
+
+                    insert(t, format('%s [color="%s" shape="box" style="rounded,filled"];\n',
+                                     dot_escape_name(caller), c1))
+                    insert(t, format('%s [color="%s" shape="box" style="rounded,filled"];\n',
+                                     dot_escape_name(callee), c2))
+                    link_added[key] = true
                 end
             end
         end
@@ -284,8 +313,11 @@ end
 
 function _M.get_root_dot_flow(ctx, conf)
     local t = {}
-    insert(t, "digraph structs {\nrankdir=LR;\n")
-    local call = ctx.call
+    insert(t, [[digraph g {
+rankdir=LR;
+node [peripheries=1 fontname="helvetica bold" fontcolor="#ffffff"];
+]])
+    --local call = ctx.call
 
     local roots
     if conf.main then

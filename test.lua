@@ -10,7 +10,7 @@ describe("Luaflow tests", function()
         local ctx = lib.create_ctx()
         local t = lib.parse(ctx, lua_src)
         lib.adjust_ctx(ctx)
-        local flow = lib.get_root_flow(ctx)
+        local flow = lib.get_root_flow(ctx, {}) -- use empty conf
         flow[#flow + 1] = "\n"
         assert.are.equal(flow_txt, concat(flow))
     end
@@ -23,7 +23,7 @@ describe("Luaflow tests", function()
         local ctx = lib.create_ctx()
         local t = lib.parse_file(ctx, test_file_path(lua_file))
         lib.adjust_ctx(ctx)
-        local flow = lib.get_root_flow(ctx)
+        local flow = lib.get_root_flow(ctx, {}) -- use empty conf
         flow[#flow + 1] = "\n"
         assert.are.equal(txt, concat(flow))
     end

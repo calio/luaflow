@@ -11,6 +11,7 @@ local encode = cjson.encode
 local parse_file = lib.parse_file
 local adjust_ctx = lib.adjust_ctx
 local create_ctx = lib.create_ctx
+local visit_tree = lib.visit_tree
 local print_root_flow = lib.print_root_flow
 local print_root_dot_flow = lib.print_root_dot_flow
 local get_root_dot_flow = lib.get_root_dot_flow
@@ -171,6 +172,8 @@ local function main()
         print(encode(t))
         return
     end
+
+    t = visit_tree(ctx, t)
 
     adjust_ctx(ctx)
 

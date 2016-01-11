@@ -41,11 +41,18 @@ describe("Luaflow tests", function()
         "main\n    foo\n")
 
         verify_flow([[
-function foo()
-    foo()
-end
+        function foo()
+            foo()
+        end
         ]],
         "foo\n    foo (recursive: see 1)\n")
+
+        verify_flow([[
+        local function foo()
+            return function () end
+        end
+        ]],
+        "")
 
     end)
 

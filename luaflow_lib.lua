@@ -146,18 +146,6 @@ function _M.parse(ctx, s)
         return error(err)
     end
 
-    local conf = {
-        Function    = { enter = process_function_enter,
-                        leave = process_function_leave },
-        Call        = { enter = process_call_enter },
-        Set         = { enter = process_set_enter },
-        Local       = { enter = process_set_enter },
-        Localrec    = { enter = process_localrec_enter },
-        Pair        = { enter = process_pair_enter },
-    }
-
-    visit(t, conf, ctx)
-
     return t
 end
 
@@ -342,7 +330,26 @@ function _M.parse_file(ctx, fname)
     local s = file:read("*a")
     file:close()
 
-    return _M.parse(ctx, s)
+    local t = _M.parse(ctx, s)
+
+    return t
+end
+
+function _M.visit_tree(ctx, t)
+
+    local conf = {
+        Function    = { enter = process_function_enter,
+                        leave = process_function_leave },
+        Call        = { enter = process_call_enter },
+        Set         = { enter = process_set_enter },
+        Local       = { enter = process_set_enter },
+        Localrec    = { enter = process_localrec_enter },
+        Pair        = { enter = process_pair_enter },
+    }
+
+    visit(t, conf, ctx)
+
+    return t
 end
 
 return _M

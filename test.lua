@@ -9,6 +9,7 @@ describe("Luaflow tests", function()
     local function verify_flow(lua_src, flow_txt)
         local ctx = lib.create_ctx()
         local t = lib.parse(ctx, lua_src)
+        lib.visit_tree(ctx, t)
         lib.adjust_ctx(ctx)
         local flow = lib.get_root_flow(ctx, {}) -- use empty conf
         flow[#flow + 1] = "\n"
@@ -22,6 +23,7 @@ describe("Luaflow tests", function()
 
         local ctx = lib.create_ctx()
         local t = lib.parse_file(ctx, test_file_path(lua_file))
+        lib.visit_tree(ctx, t)
         lib.adjust_ctx(ctx)
         local flow = lib.get_root_flow(ctx, {}) -- use empty conf
         flow[#flow + 1] = "\n"
@@ -30,6 +32,9 @@ describe("Luaflow tests", function()
 
     it("sanity", function()
         verify_flow_file("sanity.lua", "sanity.txt")
+    end)
+
+    it("sanity2", function()
         verify_flow([[
         function
             foo()
@@ -39,21 +44,24 @@ describe("Luaflow tests", function()
         end
         ]],
         "main\n    foo\n")
+    end)
 
+    it("recursive", function()
         verify_flow([[
         function foo()
             foo()
         end
         ]],
         "foo\n    foo (recursive: see 1)\n")
+    end)
 
+    it("unamed function", function()
         verify_flow([[
         local function foo()
             return function () end
         end
         ]],
-        "")
-
+        "foo\n")
     end)
 
 end)

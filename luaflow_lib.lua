@@ -9,14 +9,26 @@ local insert = table.insert
 local concat = table.concat
 local format = string.format
 local find   = string.find
+local sub    = string.sub
+local max    = math.max
+local min    = math.min
 local encode = cjson.encode
 local GLOBAL = '_G'
 
 
+local DEBUG
 local node_color = {}
 local link_added = {}
 local colors = {"#0288d1", "#03a9f4", "#ffc107", "#ffa000"}
 
+
+local function log(...)
+    print("[" .. debug.getinfo(2, "n").name .. "]", ...)
+end
+
+function _M.set_verbose()
+    DEBUG = true
+end
 
 function _M.create_ctx()
     return {
@@ -81,17 +93,27 @@ local function process_localrec_enter(t, ctx)
 end
 
 local function process_function_enter(t, ctx)
-    assert(t.name, "No function name: " .. encode(t))
-    insert(ctx.scope, t.name)
+    --assert(t.name, "No function name: " .. encode(t))
+    if t.name then
+        insert(ctx.scope, t.name)
 
-    -- add new function to root list
-    ctx.roots[t.name] = true
+        -- add new function to root list
+        ctx.roots[t.name] = true
+    else
+        if DEBUG then
+            print("skip unnamed function: ",
+                  sub(ctx.source, max(t.pos - 9, 0),
+                      min(t.pos + 20, ctx.source_len)))
+        end
+    end
 end
 
 local function process_function_leave(t, ctx)
     --print("Current scope: ", encode(ctx.scope))
     --print("Deleting scope: ", ctx.scope[#ctx.scope])
-    ctx.scope[#ctx.scope] = nil
+    if t.name then
+        ctx.scope[#ctx.scope] = nil
+    end
 end
 
 local function process_call_enter(t, ctx)
@@ -145,6 +167,9 @@ function _M.parse(ctx, s)
     if not t and err then
         return error(err)
     end
+
+    ctx.source = s
+    ctx.source_len = #s
 
     return t
 end
@@ -336,6 +361,9 @@ function _M.parse_file(ctx, fname)
 end
 
 function _M.visit_tree(ctx, t)
+    if DEBUG then
+        log("begin visiting tree")
+    end
 
     local conf = {
         Function    = { enter = process_function_enter,

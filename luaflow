@@ -144,6 +144,7 @@ local function main()
         {'g', 'graph', 'generate call graph file (png format)'},
         {'m', 'main', 'main/entry function', ':'},
         {'h', 'help', 'show this help message'},
+        {'v', 'verbose', 'print more debugging information'},
     }, arg, "luaflow [OPTIONS] luafile\n")
 
     if #arg < 1 then
@@ -156,7 +157,14 @@ local function main()
     if opt.help then
         usage()
         os.exit(0)
-    elseif not arg[opt_idx] then
+    end
+
+    if opt.verbose then
+        print("setting verbose mode")
+        lib.set_verbose()
+    end
+
+    if not arg[opt_idx] then
         print("Missing luafile")
         usage()
         os.exit()
